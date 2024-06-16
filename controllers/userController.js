@@ -1,6 +1,7 @@
 import User from '../models/userModel.js';
 import bcrypt from 'bcryptjs';
 import generateTokenAndSetCookie from '../utils/helpers/genTokenAndSetCookie.js';
+import { v2 as cloudinary } from 'cloudinary';
 
 export const signUpUser = async (req, res) => {
     try {
@@ -120,11 +121,11 @@ export const followUnFollowUser = async (req, res) => {
 }
 
 export const updateUser = async (req, res) => {
-    const { name, email, username, password, profilePic, bio } = req.body;
+    let { name, email, username, password, profilePic, bio } = req.body;
     const userId = req.user._id;
 
     try {
-        const user = await User.findById(userId);
+        let user = await User.findById(userId);
         if (!user) return res.status(400).json({ error: "User not found" });
 
         if (req.params.id !== userId.toString()) {
@@ -137,14 +138,24 @@ export const updateUser = async (req, res) => {
             user.password =  hashedPassword;
         }
 
+        if (profilePic) {
+            if (user.profilePic) {
+                await cloudinary.uploader.destroy(user.profilePic.split('/').pop().split(".")[0]);
+            }
+            const uploadedResponse = await cloudinary.uploader.upload(profilePic);
+            profilePic = uploadedResponse.secure_url;
+        }
+
         user.name = name || user.name;
         user.email = email || user.email;
         user.username = username || user.username;
         user.profilePic = profilePic || user.profilePic;
         user.bio = bio || user.bio;
 
-        const updatedUser = await user.save();
-        return res.status(200).json({ message: "Profile updated sucesfully", user: updatedUser })
+        const savedUser = await user.save();
+        user = savedUser.toObject();
+        delete user.password;
+        return res.status(200).json(user);
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: error.message });
@@ -156,7 +167,7 @@ export const userProfile = async (req, res) => {
         const { username } = req.params;
         const user = await User.findOne({ username: username}).select("-password").select("-updatedAt").select("-__v");
         if (!user) return res.status(400).json({ error: "User not found" });
-        return res.status(200).json({ user });
+        return res.status(200).json(user);
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: error.message });
