@@ -38,3 +38,123 @@ export const signUpUser = async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 }
+
+export const loginUser = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        generateTokenAndSetCookie(user._id, res);
+        res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            username: user.username
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export const logoutUser = async (req, res) => {
+    try {
+        res.cookie('jwt', '', { maxAge: 1 });
+        res.status(200).json({ message: 'Logged out' });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export const followUnFollowUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const otherUser = await User.findById(id);
+
+        if (!otherUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const currentUser = await User.findById(req.user._id);
+
+        if (!currentUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (currentUser._id.toString() === otherUser._id.toString()) {
+            return res.status(400).json({ message: 'You cannot follow yourself' });
+        }
+
+        const isFollowing = currentUser.following.includes(id);
+
+        if (isFollowing) {
+            // unfollow user
+            // modify current user follow
+            await User.findByIdAndUpdate(req.user._id, {$pull: { following: id }});
+            await User.findByIdAndUpdate(id, {$pull: { followers: req.user._id}});
+            return res.status(200).json({ message: "User Unfollowed successfully" });
+        } else {
+            await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
+            await User.findByIdAndUpdate(id, {$push: { followers: req.user._id}});
+            return res.status(200).json({ message: "User Followed Successfully" });
+        }
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export const updateUser = async (req, res) => {
+    const { name, email, username, password, profilePic, bio } = req.body;
+    const userId = req.user._id;
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) return res.status(400).json({ message: "User not found" });
+
+        if (req.params.id !== userId.toString()) {
+            return res.status(401).json({ message: "Not authorized to update others profile" });
+        }
+
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+            user.password =  hashedPassword;
+        }
+
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.username = username || user.username;
+        user.profilePic = profilePic || user.profilePic;
+        user.bio = bio || user.bio;
+
+        const updatedUser = await user.save();
+        return res.status(200).json({ message: "Profile updated sucesfully", user: updatedUser })
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export const userProfile = async (req, res) => {
+    try {
+        const { username } = req.params;
+        const user = await User.findOne({ username: username}).select("-password").select("-updatedAt").select("-__v");
+        if (!user) return res.status(400).json({ message: "User not found" });
+        return res.status(200).json({ user });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: error.message });
+    }
+}
