@@ -36,7 +36,7 @@ export const createPost = async (req, res) => {
             img: img
         });
         await newPost.save();
-        return res.status(201).json({ message: 'Post created successfully', newPost});
+        return res.status(201).json(newPost);
 
     } catch (error) {
         console.error(error)
@@ -134,7 +134,7 @@ export const replyToPost = async (req, res) => {
         post.replies.push(reply);
         await post.save();
 
-        res.status(200).json({ message: "Reply added successfully", post });
+        res.status(200).json(reply);
 
     } catch (error) {
         console.error(error);
