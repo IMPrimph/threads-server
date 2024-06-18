@@ -53,7 +53,7 @@ export const getPost = async (req, res) => {
         if (!post) {
             return res.status(404).json({ error: 'Post not found'});
         }
-        return res.status(200).json({ post});
+        return res.status(200).json(post);
     } catch (error) {
         console.error(error);
         return res.status(404).json({ error: 'Error fetching post'});
