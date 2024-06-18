@@ -74,6 +74,10 @@ export const deletePost = async (req, res) => {
             return res.status(401).json({ error: 'Not authorized'});
         }
 
+        if (post.img) {
+            await cloudinary.uploader.destroy(post.img.split("/").pop().split(".")[0]);
+        }
+
         await Post.findByIdAndDelete(id);
         return res.status(200).json({ message: 'Post deleted successfully'});
     } catch (error) {
