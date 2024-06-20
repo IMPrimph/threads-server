@@ -14,7 +14,7 @@ export async function sendMessage(req, res) {
             conversation = new Conversation({
                 participants: [senderId, recipientId],
                 lastMessage: {
-                    senderId: senderId,
+                    sender: senderId,
                     text: message,
                 }
             });
@@ -23,7 +23,7 @@ export async function sendMessage(req, res) {
 
         const newMessage = await Message({
             conversationId: conversation._id,
-            senderId: senderId,
+            sender: senderId,
             text: message,
         });
 
@@ -31,7 +31,7 @@ export async function sendMessage(req, res) {
             newMessage.save(),
             conversation.updateOne({
                 lastMessage: {
-                    senderId: senderId,
+                    sender: senderId,
                     text: message,
                 }
             })
@@ -79,6 +79,13 @@ export async function getConversations(req, res) {
             path: 'participants',
             select: 'username profilePic'
         }).sort({ updatedAt: -1 });
+
+        // remove the current user from participants array
+        conversations.forEach(conversation => {
+            conversation.participants = conversation.participants.filter(participant => {
+                return participant._id.toString() !== userId.toString();
+            });
+        });
 
         return res.status(200).json(conversations);
     } catch (error) {
