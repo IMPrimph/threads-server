@@ -1,5 +1,5 @@
 import express from 'express';
-import { signUpUser, loginUser, logoutUser, suggestedUsers, followUnFollowUser, updateUser, userProfile } from '../controllers/userController.js';
+import { signUpUser, loginUser, logoutUser, suggestedUsers, freezeAccount, followUnFollowUser, updateUser, userProfile } from '../controllers/userController.js';
 import { protectRoute } from '../middlewares/protectRoute.js';
 
 const router = express.Router();
@@ -11,5 +11,6 @@ router.post('/login', loginUser);
 router.post('/logout', logoutUser);
 router.post('/follow/:id', protectRoute, followUnFollowUser); // toggle follow and unfollow users
 router.put('/update/:id', protectRoute, updateUser);
+router.put('/freeze', protectRoute, freezeAccount);
 
 export default router;
