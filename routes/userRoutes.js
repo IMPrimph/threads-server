@@ -1,10 +1,11 @@
 import express from 'express';
-import { signUpUser, loginUser, logoutUser, followUnFollowUser, updateUser, userProfile } from '../controllers/userController.js';
+import { signUpUser, loginUser, logoutUser, suggestedUsers, followUnFollowUser, updateUser, userProfile } from '../controllers/userController.js';
 import { protectRoute } from '../middlewares/protectRoute.js';
 
 const router = express.Router();
 
 router.get('/profile/:query', userProfile);
+router.get('/suggested', protectRoute, suggestedUsers);
 router.post('/signup', signUpUser);
 router.post('/login', loginUser);
 router.post('/logout', logoutUser);
